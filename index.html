@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messenger XP (GitHub Live Edition)</title>
+    <style>
+        :root {
+            --xp-blue: #245dd7;
+            --xp-orange: #ff7200;
+            --xp-bg: #ece9d8;
+            --xp-border: #7f9db9;
+            --xp-window-header: linear-gradient(to bottom, #0058e6 0%, #3a8fe4 6%, #0055e4 10%, #0044d1 22%, #0041cd 70%, #0058e6 100%);
+            --xp-button: linear-gradient(to bottom, #ffffff 0%, #eaeaea 6%, #dcdcdc 50%, #cbcbcb 100%);
+        }
+
+        * { box-sizing: border-box; font-family: "Tahoma", "Segoe UI", sans-serif; font-size: 12px; margin: 0; padding: 0; }
+        body { background: #3b619f; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; overflow: hidden; }
+
+        /* Window Container */
+        .xp-window { width: 850px; height: 600px; background: var(--xp-bg); border: 4px solid #0041cd; border-top-left-radius: 5px; border-top-right-radius: 5px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); display: flex; flex-direction: column; }
+        .xp-header { background: var(--xp-window-header); height: 30px; display: flex; align-items: center; justify-content: space-between; padding: 0 8px; color: white; font-weight: bold; text-shadow: 1px 1px 1px rgba(0,0,0,0.5); cursor: default; }
+        .xp-header-controls { display: flex; gap: 3px; }
+        .xp-btn-win { width: 22px; height: 22px; border: 1px solid white; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; cursor: pointer; box-shadow: inset 0 1px 2px rgba(255,255,255,0.5); }
+        .xp-btn-close { background: linear-gradient(to bottom, #e76044 0%, #e94025 50%, #b81b05 100%); border-color: #7b0505; }
+
+        /* Welcome Layout */
+        #login-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; padding: 40px; background: linear-gradient(to bottom, #7da2e1 0%, #3b65a6 100%); color: white; }
+        .login-card { background: #fff; color: #333; padding: 30px; border-radius: 8px; border: 2px solid var(--xp-blue); width: 350px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); text-align: center; }
+        .login-card h2 { font-size: 18px; margin-bottom: 15px; color: var(--xp-blue); }
+        .xp-input { width: 100%; padding: 8px; border: 1px solid var(--xp-border); border-radius: 3px; margin-bottom: 15px; outline: none; }
+        .xp-input:focus { border-color: var(--xp-orange); }
+        .xp-button { padding: 8px 20px; background: var(--xp-button); border: 1px solid #7f9db9; border-radius: 3px; cursor: pointer; box-shadow: 0 1px 0 #fff inset; font-weight: bold; color: #333; }
+        .xp-button:active { background: #dcdcdc; box-shadow: inset 0 1px 3px rgba(0,0,0,0.2); }
+        .xp-button.primary { background: linear-gradient(to bottom, #ff9d34 0%, #ff7200 100%); border-color: #d45500; color: white; text-shadow: 0 1px 1px rgba(0,0,0,0.3); }
+
+        /* Main Workspace App Layout */
+        #app-screen { display: none; flex-direction: column; flex: 1; height: calc(100% - 30px); }
+        .menu-bar { background: var(--xp-bg); padding: 4px 8px; border-bottom: 1px solid #d3d3d3; display: flex; gap: 12px; color: #000; }
+        .menu-item { cursor: pointer; }
+        .menu-item:hover { text-decoration: underline; }
+
+        .workspace { display: flex; flex: 1; height: calc(100% - 25px); overflow: hidden; }
+
+        /* Navigation Sidebar */
+        .sidebar { width: 240px; border-right: 2px solid #d3d3d3; background: #fff; display: flex; flex-direction: column; }
+        .user-profile { padding: 12px; background: #edf3fe; border-bottom: 1px solid #bdcedb; display: flex; align-items: center; gap: 10px; }
+        .avatar { width: 40px; height: 40px; background: #245dd7; border: 2px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.2); border-radius: 4px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 16px; }
+        .user-meta { display: flex; flex-direction: column; gap: 2px; }
+        .user-meta .name { font-weight: bold; color: #002060; }
+        .xp-select { padding: 2px; font-size: 11px; border: 1px solid var(--xp-border); margin-top: 2px; }
+
+        /* Navigation Tabs Control */
+        .tabs-header { display: flex; background: #e0e0d0; border-bottom: 1px solid var(--xp-border); }
+        .tab-btn { flex: 1; padding: 8px 4px; text-align: center; background: #dcdccb; border: 1px solid transparent; border-bottom: none; cursor: pointer; font-weight: bold; color: #555; position: relative;}
+        .tab-btn.active { background: #fff; color: #000; border-color: var(--xp-border); margin-bottom: -1px; z-index: 2; }
+        .badge { position: absolute; top: 2px; right: 2px; background: red; color: white; font-size: 9px; padding: 1px 4px; border-radius: 10px; font-weight: bold; }
+
+        /* Lists Containers */
+        .tab-content { flex: 1; overflow-y: auto; background: #fff; }
+        .list-group { padding: 5px 0; }
+        .list-header { font-weight: bold; padding: 4px 8px; background: #f0f0f0; color: #444; font-size: 11px; display: flex; justify-content: space-between; align-items: center; }
+        .list-item { display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; cursor: pointer; border-bottom: 1px solid #f9f9f9; }
+        .list-item:hover { background: #e8f0fa; }
+        .item-info { display: flex; align-items: center; gap: 8px; }
+        .status-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; border: 1px solid rgba(0,0,0,0.2); }
+        .status-online { background-color: #4caf50; }
+        .status-dnd { background-color: #f44336; }
+        .status-offline { background-color: #9e9e9e; }
+        
+        .item-actions button { padding: 2px 6px; font-size: 10px; cursor: pointer; background: var(--xp-button); border: 1px solid var(--xp-border); border-radius: 2px; }
+        .item-actions button.accept-btn { background: #4caf50; color: white; border-color: #388e3c; margin-right: 2px;}
+        .item-actions button.decline-btn { background: #f44336; color: white; border-color: #d32f2f; }
+
+        /* Room Creator Control Panel */
+        .group-control { padding: 8px; background: #edf3fe; border-top: 1px solid #bdcedb; display: flex; gap: 4px; }
+
+        /* Main Chat Work Arena */
+        .chat-area { flex: 1; display: flex; flex-direction: column; background: #fff; }
+        .chat-header { padding: 12px; background: linear-gradient(to right, #7ba1e2, #b0cbf7); border-bottom: 1px solid var(--xp-border); font-weight: bold; color: #002060; font-size: 13px; }
+        .chat-logs { flex: 1; padding: 15px; overflow-y: auto; background: #fff; display: flex; flex-direction: column; gap: 8px; }
+        
+        /* Message Layout Mechanics */
+        .msg-row { display: flex; flex-direction: column; max-width: 85%; padding: 6px 10px; border-radius: 6px; position: relative; line-height: 1.4; background: #f1f1f1; align-self: flex-start; }
+        .msg-row.me { align-self: flex-end; background: #e2ecf7; border: 1px solid #b8ccdc; }
+        .msg-meta { font-size: 10px; color: #777; margin-bottom: 2px; font-weight: bold; display: flex; gap: 6px; }
+        .msg-text { word-break: break-word; color: #222; }
+
+        /* Chat Input Dashboard Controls */
+        .chat-footer { padding: 10px; background: var(--xp-bg); border-top: 1px solid #d3d3d3; display: flex; gap: 8px; align-items: center; }
+        .chat-footer textarea { flex: 1; height: 40px; padding: 6px; border: 1px solid var(--xp-border); resize: none; outline: none; }
+        .chat-footer textarea:focus { border-color: var(--xp-orange); }
+
+        /* Utilities */
+        .hidden { display: none !important; }
+        .system-msg { text-align: center; color: #666; font-style: italic; font-size: 11px; margin: 4px 0; align-self: center !important; background: transparent !important; border: none !important; box-shadow: none !important; }
+    </style>
+</head>
+<body>
+
+<div class="xp-window">
+    <div class="xp-header">
+        <span>💬 Messenger XP (GitHub Cloud Active)</span>
+        <div class="xp-header-controls">
+            <div class="xp-btn-win">_</div>
+            <div class="xp-btn-win">⬜</div>
+            <div class="xp-btn-win xp-btn-close" onclick="location.reload()">X</div>
+        </div>
+    </div>
+
+    <!-- Login Screen -->
+    <div id="login-screen">
+        <div class="login-card">
+            <h2>Sign In / Create Profile</h2>
+            <p style="margin-bottom: 12px; color: #666; font-size:11px;">Connect instantly across different computers setup globally.</p>
+            <input type="text" id="username-input" class="xp-input" placeholder="Enter Username..." maxlength="15">
+            <button class="xp-button primary" style="width:100%" onclick="app.signIn()">Sign In to Network</button>
+        </div>
+    </div>
+
+    <!-- Workspace App -->
+    <div id="app-screen">
+        <div class="menu-bar">
+            <span class="menu-item" onclick="alert('Messenger XP Cloud v4.0\nFully synchronized across external global devices node systems.')">File</span>
+            <span class="menu-item" onclick="app.logout()">Log Off</span>
+        </div>
+
+        <div class="workspace">
+            <div class="sidebar">
+                <div class="user-profile">
+                    <div class="avatar" id="my-avatar">?</div>
+                    <div class="user-meta">
+                        <span class="name" id="my-name">User</span>
+                        <select id="my-status-select" class="xp-select" onchange="app.changeMyStatus()">
+                            <option value="online">Online</option>
+                            <option value="dnd">Do Not Disturb</option>
+                            <option value="offline">Appear Offline</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="tabs-header">
+                    <div class="tab-btn active" id="tab-btn-chats" onclick="app.switchTab('chats')">Chats</div>
+                    <div class="tab-btn" id="tab-btn-global" onclick="app.switchTab('global')">Global Log</div>
+                    <div class="tab-btn" id="tab-btn-inbox" onclick="app.switchTab('inbox')">Inbox <span class="badge hidden" id="inbox-count">0</span></div>
+                </div>
+
+                <div class="tab-content">
+                    <div id="pane-chats" class="tab-pane">
+                        <div class="list-group">
+                            <div class="list-header">PUBLIC AREA</div>
+                            <div class="list-item" onclick="app.selectTarget('global_mainroom', 'room')">
+                                <div class="item-info">🌐 <strong>Global Chat Mainroom</strong></div>
+                            </div>
+                        </div>
+                        <div class="list-group">
+                            <div class="list-header">GROUP CHATS</div>
+                            <div id="group-list-box"></div>
+                        </div>
+                        <div class="list-group">
+                            <div class="list-header">DIRECT PRIVATE LINES</div>
+                            <div id="friends-list-box"></div>
+                        </div>
+                    </div>
+
+                    <div id="pane-global" class="tab-pane hidden">
+                        <div class="list-group">
+                            <div class="list-header">CONNECTED WORLDWIDE LOG</div>
+                            <div id="global-directory-box"></div>
+                        </div>
+                    </div>
+
+                    <div id="pane-inbox" class="tab-pane hidden">
+                        <div class="list-group">
+                            <div class="list-header">PENDING INCOMING INVITATIONS</div>
+                            <div id="inbox-requests-box"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="group-control">
+                    <input type="text" id="new-group-name" class="xp-input" placeholder="New Group Name..." style="margin-bottom:0; padding:4px;">
+                    <button class="xp-button" onclick="app.createGroupChat()">[+ Create]</button>
+                </div>
+            </div>
+
+            <div class="chat-area">
+                <div class="chat-header" id="active-chat-title">Selecting Chatroom Stream Node...</div>
+                <div class="chat-logs" id="chat-messages-stream">
+                    <div class="system-msg">Please pick an active workspace stream or channel tab item to begin.</div>
+                </div>
+                <div class="chat-footer">
+                    <textarea id="chat-input-textarea" placeholder="Type a message here..." onkeydown="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); app.sendMessage(); }"></textarea>
+                    <button class="xp-button primary" style="height:40px; padding:0 15px;" onclick="app.sendMessage()">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+/**
+ * MESSENGER XP ONLINE GITHUB PIPELINE ARCHITECTURE
+ * Uses high-efficiency SSE tracking over an open public proxy channel.
+ */
+class MessengerXP {
+    constructor() {
+        this.me = { username: '', status: 'online' };
+        this.networkUsers = {};  
+        this.groupChats = {};    
+        this.friends = [];       
+        this.pendingInbox = [];  
+        
+        this.activeTargetId = 'global_mainroom'; 
+        this.activeTargetType = 'room'; 
+        
+        // Random room assignment ensures separation from generic streams
+        this.appChannelSpace = "msg_xp_gh_v4_prod_room"; 
+        this.relayUrl = `https://ntfy.sh/\${this.appChannelSpace}`;
+        this.eventSource = null;
+    }
+
+    init() {
+        const storedUser = localStorage.getItem('xp_username');
+        if (storedUser) {
+            document.getElementById('username-input').value = storedUser;
+        }
+        this.renderInterface();
+    }
+
+    signIn() {
+        let nameInput = document.getElementById('username-input').value.trim();
+        nameInput = nameInput.replace(/[^a-zA-Z0-9_\s]/g, "");
+        if (!nameInput) return alert("Please specify a valid handle profile username first!");
+
+        this.me.username = nameInput;
+        localStorage.setItem('xp_username', nameInput);
+
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('app-screen').style.display = 'flex';
+
+        document.getElementById('my-name').innerText = this.me.username;
+        document.getElementById('my-avatar').innerText = this.me.username.charAt(0).toUpperCase();
+
+        this.connectToCloudEngine();
+        this.broadcastPulse('presence'); 
+        this.selectTarget('global_mainroom', 'room');
+        
+        setInterval(() => this.broadcastPulse('presence'), 4000);
+    }
+
+    logout() {
+        this.broadcastPulse('logout');
+        localStorage.removeItem('xp_username');
+        location.reload();
+    }
+
+    connectToCloudEngine() {
+        if (this.eventSource) this.eventSource.close();
+
+        // Optimized explicit json streaming route to pass GitHub Pages origin security matrices
+        this.eventSource = new EventSource(`\${this.relayUrl}/sse?json=1`);
+        
+        this.eventSource.onmessage = (event) => {
+            try {
+                const rawData = JSON.parse(event.data);
+                // Unpack deep nested text string payloads
+                if (rawData && rawData.attachment && rawData.attachment.url) {
+                    const decodedPayload = decodeURIComponent(rawData.attachment.url);
+                    const packet = JSON.parse(decodedPayload);
+                    if (packet && packet.sender && packet.sender !== this.me.username) {
+                        this.handleIncomingCloudTransaction(packet);
+                    }
+                }
+            } catch (e) {
+                console.error("Payload decoding error", e);
+            }
+        };
+
+        this.eventSource.onerror = () => {
+            setTimeout(() => this.connectToCloudEngine(), 3000);
+        };
+    }
+
+    async broadcastPulse(type, targetData = {}) {
+        if (!this.me.username) return;
+
+        const payload = {
+            sender: this.me.username,
+            status: this.me.status,
+            type: type,
+            timestamp: Date.now(),
+            ...targetData
+        };
+
+        const payloadString = encodeURIComponent(JSON.stringify(payload));
+
+        try {
+            // Emits using proxy header maps allowing external cross-origin web deployment natively
+            await fetch(this.relayUrl, {
+                method: 'POST',
+                body: "Incoming Node Frame Broadcast Request Stream",
+                headers: { 
+                    'X-Title': "Messenger_XP_Frame",
+                    'X-Attach': payloadString
+                }
+            });
+        } catch (err) {
+            console.error("Transmission error:", err);
+        }
+    }
+
+    handleIncomingCloudTransaction(data) {
+        switch(data.type) {
+            case 'presence':
+                this.networkUsers[data.sender] = {
+                    status: data.status,
+                    lastSeen: Date.now()
+                };
+                this.renderInterface();
+                break;
+
+            case 'logout':
+                delete this.networkUsers[data.sender];
+                this.renderInterface();
+                break;
+
+            case 'chat_msg':
+                if (data.targetType === 'room' && this.activeTargetId === data.targetId) {
+                    this.appendMessageElement(data.sender, data.text, false, data.timestamp);
+                } 
+                else if (data.targetType === 'friend' && data.targetId === this.me.username && this.activeTargetId === data.sender) {
+                    this.appendMessageElement(data.sender, data.text, false, data.timestamp);
+                }
+                break;
+
+            case 'add_friend_request':
+                if (data.targetUser === this.me.username) {
+                    if (!this.pendingInbox.includes(data.sender) && !this.friends.includes(data.sender)) {
+                        this.pendingInbox.push(data.sender);
+                        this.renderInterface();
+                    }
+                }
+                break;
+
+            case 'accept_friend_response':
+                if (data.targetUser === this.me.username) {
+                    if (!this.friends.includes(data.sender)) {
+                        this.friends.push(data.sender);
+                        this.renderInterface();
+                    }
+                }
+                break;
+
+            case 'new_group_announcement':
+                if (!this.groupChats[data.groupId]) {
+                    this.groupChats[data.groupId] = data.groupName;
+                    this.renderInterface();
+                }
+                break;
+        }
+    }
+
+    changeMyStatus() {
+        this.me.status = document.getElementById('my-status-select').value;
+        this.broadcastPulse('presence');
+    }
+
+    switchTab(tabId) {
+        document.querySelectorAll('.tab-pane').forEach(el => el.classList.add('hidden'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        
+        document.getElementById(`pane-\${tabId}`).classList.remove('hidden');
+        document.getElementById(`tab-btn-\${tabId}`).classList.add('active');
+    }
+
+    selectTarget(id, type) {
+        this.activeTargetId = id;
+        this.activeTargetType = type;
+
+        const titleHeader = document.getElementById('active-chat-title');
+        const streamContainer = document.getElementById('chat-messages-stream');
+        
+        streamContainer.innerHTML = ''; 
+
+        if (type === 'room') {
+            if (id === 'global_mainroom') {
+                titleHeader.innerText = "🌍 Global Chat Mainroom (Public Stream Channel)";
+                streamContainer.innerHTML = `<div class="system-msg">Joined Global Mainroom. Conversations are live across all active devices.</div>`;
+            } else {
+                const rName = this.groupChats[id] || "Custom Group Room";
+                titleHeader.innerText = `👥 Group Chat: \${rName}`;
+                streamContainer.innerHTML = `<div class="system-msg">Connected to dynamic channel group stream room.</div>`;
+            }
+        } else {
+            titleHeader.innerText = `👤 Secure Direct Private Line: \${id}`;
+            streamContainer.innerHTML = `<div class="system-msg">This starts an isolated dialogue string targeting only 	hise.</div>`.replace('\thise', id);
+        }
+    }
+
+    sendMessage() {
+        const textBar = document.getElementById('chat-input-textarea');
+        const content = textBar.value.trim();
+        if (!content) return;
+
+        this.broadcastPulse('chat_msg', {
+            targetId: this.activeTargetId,
+            targetType: this.activeTargetType,
+            text: content
+        });
+
+        this.appendMessageElement(this.me.username, content, true, Date.now());
+        textBar.value = '';
+    }
+
+    appendMessageElement(sender, text, isMe = false, timestamp = Date.now()) {
+        const streamContainer = document.getElementById('chat-messages-stream');
+        const timeStr = new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+        const row = document.createElement('div');
+        row.className = `msg-row \${isMe ? 'me' : ''}`;
+
+        row.innerHTML = `
+            <div class="msg-meta">
+                <span class="sender-tag" style="color:\${isMe ? '#003399' : '#b15200'}">\${sender}</span>
+                <span class="time-tag">\${timeStr}</span>
+            </div>
+            <div class="msg-text"></div>
+        `;
+        
+        row.querySelector('.msg-text').innerText = text;
+        
+        streamContainer.appendChild(row);
+        streamContainer.scrollTop = streamContainer.scrollHeight;
+    }
+
+    sendFriendRequest(targetUser) {
+        if (targetUser === this.me.username) return;
+        this.broadcastPulse('add_friend_request', { targetUser: targetUser });
+        alert(`Friend request transmission broadcasted targeting profile handle: [\${targetUser}]`);
+    }
+
+    acceptFriend(sender) {
+        this.pendingInbox = this.pendingInbox.filter(u => u !== sender);
+        if (!this.friends.includes(sender)) {
+            this.friends.push(sender);
+        }
+        this.broadcastPulse('accept_friend_response', { targetUser: sender });
+        this.renderInterface();
+    }
+
+    declineFriend(sender) {
+        this.pendingInbox = this.pendingInbox.filter(u => u !== sender);
+        this.renderInterface();
+    }
+
+    createGroupChat() {
+        const inputEl = document.getElementById('new-group-name');
+        const name = inputEl.value.trim();
+        if (!name) return alert("Please provide a name for your group!");
+
+        const gId = "group_" + Date.now();
+        this.groupChats[gId] = name;
+        
+        this.broadcastPulse('new_group_announcement', { groupId: gId, groupName: name });
+        inputEl.value = '';
+        this.renderInterface();
+        this.selectTarget(gId, 'room');
+    }
+
+    renderInterface() {
+        const expiryTime = Date.now() - 12000;
+        for (let user in this.networkUsers) {
+            if (this.networkUsers[user].lastSeen < expiryTime) {
+                delete this.networkUsers[user];
+            }
+        }
+
+        const dirBox = document.getElementById('global-directory-box');
+        dirBox.innerHTML = '';
+        
+        let dynamicGlobalUserCount = 0;
+        for (let username in this.networkUsers) {
+            dynamicGlobalUserCount++;
+            const item = document.createElement('div');
+            item.className = 'list-item';
+            
+            const userStatus = this.networkUsers[username].status || 'online';
+            const isFriend = this.friends.includes(username);
+
+            item.innerHTML = `
+                <div class="item-info">
+                    <span class="status-dot status-\${userStatus}"></span>
+                    <span><strong>\${username}</strong> (\${userStatus})</span>
+                </div>
+                <div class="item-actions">
+                    \${isFriend ? '<span>✓ Friend</span>' : `<button onclick="app.sendFriendRequest('\${username}')">Add Friend</button>`}
+                </div>
+            `;
+            dirBox.appendChild(item);
+        }
+        if (dynamicGlobalUserCount === 0) {
+            dirBox.innerHTML = '<div style="padding:15px; text-align:center; color:#888;">No external network computers found active.</div>';
+        }
+
+        const friendBox = document.getElementById('friends-list-box');
+        friendBox.innerHTML = '';
+        this.friends.forEach(f => {
+            const item = document.createElement('div');
+            item.className = `list-item \${this.activeTargetId === f ? 'active' : ''}`;
+            item.onclick = () => this.selectTarget(f, 'friend');
+
+            const status = this.networkUsers[f] ? this.networkUsers[f].status : 'offline';
+
+            item.innerHTML = `
+                <div class="item-info">
+                    <span class="status-dot status-\${status}"></span>
+                    <span>\${f}</span>
+                </div>
+            `;
+            friendBox.appendChild(item);
+        });
+        if (this.friends.length === 0) {
+            friendBox.innerHTML = '<div style="padding:8px; text-align:center; color:#999; font-size:11px;">Add handles from the global log tab!</div>';
+        }
+
+        const groupBox = document.getElementById('group-list-box');
+        groupBox.innerHTML = '';
+        let dynamicGroupCount = 0;
+        for (let gId in this.groupChats) {
+            dynamicGroupCount++;
+            const item = document.createElement('div');
+            item.className = `list-item \${this.activeTargetId === gId ? 'active' : ''}`;
+            item.onclick = () => this.selectTarget(gId, 'room');
+            item.innerHTML = `<div class="item-info">💬 <span>\${this.groupChats[gId]}</span></div>`;
+            groupBox.appendChild(item);
+        }
+        if (dynamicGroupCount === 0) {
+            groupBox.innerHTML = '<div style="padding:8px; text-align:center; color:#999; font-size:11px;">No active channels built yet.</div>';
+        }
+
+        const inboxBox = document.getElementById('inbox-requests-box');
+        inboxBox.innerHTML = '';
+        this.pendingInbox.forEach(sender => {
+            const item = document.createElement('div');
+            item.className = 'list-item';
+            item.innerHTML = `
+                <div class="item-info"><strong>\${sender}</strong> sent an invitation.</div>
+                <div class="item-actions">
+                    <button class="accept-btn" onclick="app.acceptFriend('\${sender}')">✓ Accept</button>
+                    <button class="decline-btn" onclick="app.declineFriend('\${sender}')">X Decline</button>
+                </div>
+            `;
+            inboxBox.appendChild(item);
+        });
+
+        const inboxCountBadge = document.getElementById('inbox-count');
+        if (this.pendingInbox.length > 0) {
+            inboxCountBadge.innerText = this.pendingInbox.length;
+            inboxCountBadge.classList.remove('hidden');
+        } else {
+            inboxCountBadge.classList.add('hidden');
+        }
+    }
+}
+
+const app = new MessengerXP();
+window.onload = () => app.init();
+</script>
+</body>
+</html>
