@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title id="pageTitleTag">Messenger XP</title>
+<link rel="icon" id="favicon" href="data:image/x-icon;base64,">
+<style>
+  * { box-sizing: border-box; }
+  body, html {
+    margin:0; padding:0; height:100%; width:100%; overflow:hidden;
+    font-family: "Tahoma", "Segoe UI", sans-serif;
+    font-size:12px; user-select:none;
+    background: #1e6fd9 url('img/background.webp') no-repeat center center fixed;
+    background-size: cover;
+  }
+  #desktop {
+    position:absolute; top:0; left:0; right:0; bottom:38px;
+    padding:14px; display:flex; flex-direction:column; flex-wrap:wrap; gap:6px;
+  }
+  .desktop-icon {
+    width:78px; height:78px; display:flex; flex-direction:column; align-items:center;
+    color:#fff; text-shadow:1px 1px 2px #000, 0 0 3px rgba(0,0,0,0.6); cursor:pointer; padding:4px; border:1px dotted transparent; border-radius:3px;
+  }
+  .desktop-icon:active, .desktop-icon.selected { border:1px dotted #fff; background:rgba(49,106,197,0.45); }
+  .desktop-icon .icon-glyph {
+    font-size:34px; line-height:1; margin-bottom:4px;
+    filter: drop-shadow(1px 2px 2px rgba(0,0,0,0.5));
+  }
+  .desktop-icon .icon-label { font-size:11px; text-align:center; word-break:break-word; }
+
+  /* ---------------- Taskbar (XP Luna) ---------------- */
+  #taskbar {
+    position:absolute; left:0; right:0; bottom:0; height:38px;
+    background:linear-gradient(180deg,#2c85e5 0%,#1c5fce 45%,#1c5fce 55%,#0f3fa0 100%);
+    border-top:1px solid #6fa8f0;
+    display:flex; align-items:center; padding:0 3px; gap:6px; z-index:5000;
+    box-shadow: 0 -1px 4px rgba(0,0,0,0.4) inset;
+  }
+  #startBtn {
+    height:30px; padding:0 14px 0 6px; border-radius:0 8px 8px 0;
+    background:linear-gradient(180deg,#8fe870,#3fa720 45%,#2e8c15 55%,#5cc93c);
+    color:#fff; font-weight:bold; font-style:italic; font-size:15px;
+    display:flex; align-items:center; gap:6px; cursor:pointer;
+    border:1px solid #2c7a13; text-shadow:1px 1px 1px rgba(0,0,0,0.4);
+  }
+  #startBtn .orb { font-size:18px; filter:drop-shadow(0 0 2px #fff); }
+  #startBtn:active { filter:brightness(0.9); }
+
+  #taskbarDivider { width:2px; height:26px; background:rgba(0,0,60,0.4); border-right:1px solid rgba(255,255,255,0.3); }
+
+  #taskbarApps { flex:1; display:flex; gap:4px; overflow-x:auto; height:100%; align-items:center; }
+  .taskbar-app-btn {
+    min-width:130px; max-width:200px; text-align:left; height:28px; color:#fff;
+    background:linear-gradient(180deg,#3a86e0,#1c5cc9); border:1px solid #0e3f9c; border-radius:3px;
+    padding:0 8px; display:flex; align-items:center; gap:4px; font-size:11px; cursor:pointer;
+    overflow:hidden; white-space:nowrap; text-overflow:ellipsis;
+  }
+  .taskbar-app-btn.pressed { background:linear-gradient(180deg,#0e3f9c,#123b7a); box-shadow: inset 0 2px 4px rgba(0,0,0,0.5); }
+
+  #trayArea {
+    display:flex; align-items:center; gap:6px;
+    background:linear-gradient(180deg,#1c5fce,#124099);
+    border-left:1px solid #6fa8f0; padding:2px 8px; height:30px; border-radius:6px 0 0 6px;
+    color:#fff;
+  }
+  #clock { cursor:pointer; padding:2px 4px; font-size:11px; }
+  #timeToggle { font-size:9px; padding:2px 5px; background:#2b6fdc; color:#fff; border:1px solid #6fa8f0; border-radius:3px; cursor:pointer; }
+  #timeToggle:active { background:#124099; }
+
+  /* ---------------- Windows ---------------- */
+  .win98-window {
+    position:absolute; background:#ece9d8; border:1px solid #0831d9; border-radius:8px 8px 3px 3px;
+    box-shadow:3px 3px 10px rgba(0,0,0,0.5);
+    min-width:240px; min-height:150px; display:flex; flex-direction:column; z-index:100; overflow:hidden;
+  }
+  .win98-titlebar {
+    background:linear-gradient(180deg,#3d95f5 0%, #1e63e0 45%, #1955d6 55%, #0f3fbf 100%);
+    color:#fff; font-weight:bold; font-size:13px;
+    padding:4px 4px 4px 8px; display:flex; align-items:center; justify-content:space-between; cursor:move;
+    text-shadow:1px 1px 1px rgba(0,0,0,0.4);
+  }
+  .win98-titlebar .title-text { display:flex; align-items:center; gap:5px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+  .win98-titlebar-btns { display:flex; gap:2px; }
+  .tb-btn {
+    width:21px; height:19px; border-radius:3px; font-size:11px; line-height:18px; text-align:center;
+    cursor:pointer; color:#fff; font-weight:bold; border:1px solid rgba(255,255,255,0.4);
+  }
+  .tb-btn.min { background:linear-gradient(180deg,#5b9df5,#1c5cd6); }
+  .tb-btn.max { background:linear-gradient(180deg,#5b9df5,#1c5cd6); }
+  .tb-btn.close { background:linear-gradient(180deg,#f57a6b,#d32f1e); }
+  .tb-btn:active { filter:brightness(0.85); }
+
+  .win98-body { flex:1; padding:8px; overflow:auto; background:#ece9d8; display:flex; flex-direction:column; min-height:0; }
+  .win98-body.white { background:#fff; }
+  .inset-panel { border:1px solid #7f9db9; background:#fff; border-radius:2px; }
+
+  input[type=text], input[type=password], textarea, select {
+    font-family:inherit; font-size:12px; padding:4px; border:1px solid #7f9db9; border-radius:2px; background:#fff;
+  }
+  input[type=text]:focus, textarea:focus { outline:2px solid #ffb84d; }
+
+  button.btn98, .btn98 {
+    background:linear-gradient(180deg,#fefefe,#e3e3e3);
+    border:1px solid #8a8a8a; border-radius:3px; padding:4px 10px;
+    cursor:pointer; font-size:12px; color:#000;
+  }
+  .btn98:active, .btn98.pressed { background:linear-gradient(180deg,#d5d5d5,#bdbdbd); }
+  .btn98:hover { border-color:#3d95f5; }
+
+  /* ---------------- Sign-in overlay ---------------- */
+  #signinOverlay {
+    position:fixed; inset:0; background:radial-gradient(circle at 30% 20%, #4f9cf0, #0a3fae 70%); display:flex; align-items:center; justify-content:center; z-index:9999;
+  }
+  #signinBox { width:340px; }
+  #signinBox .win98-body { gap:10px; }
+
+  /* ---------------- Calendar ---------------- */
+  #calendarPopup { width:230px; }
+  .cal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; }
+  .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; text-align:center; font-size:11px; }
+  .cal-grid div { padding:3px 0; }
+  .cal-daylabel { font-weight:bold; color:#1955d6; }
+  .cal-day { cursor:default; }
+  .cal-today { background:#1955d6; color:#fff; font-weight:bold; border-radius:3px; }
+
+  /* ---------------- Messenger ---------------- */
+  .messenger-layout { display:flex; height:100%; gap:6px; }
+  .contact-list { width:150px; overflow-y:auto; background:#fff; border-radius:2px; }
+  .contact-item { padding:7px; border-bottom:1px solid #e6e6e6; cursor:pointer; display:flex; align-items:center; gap:5px; }
+  .contact-item .dot { width:8px; height:8px; border-radius:50%; background:#4fc94f; display:inline-block; }
+  .contact-item:hover { background:#dbe9fb; }
+  .contact-item.active { background:#1955d6; color:#fff; }
+  .contact-item.active .dot { background:#a6ffa6; }
+  .chat-area { flex:1; display:flex; flex-direction:column; min-width:0; }
+  .chat-messages { flex:1; overflow-y:auto; background:#fff; padding:8px; display:flex; flex-direction:column; gap:6px; }
+  .msg-bubble { max-width:75%; padding:6px 9px; border-radius:8px; font-size:12px; }
+  .msg-mine { align-self:flex-end; background:#cfe2ff; border:1px solid #8fb8f0; }
+  .msg-theirs { align-self:flex-start; background:#f0f0f0; border:1px solid #ddd; }
+  .msg-meta { font-size:9px; color:#666; margin-top:2px; }
+  .msg-file { display:block; margin-top:3px; color:#1955d6; }
+  .chat-input-row { display:flex; gap:4px; margin-top:5px; }
+  .chat-input-row input[type=text] { flex:1; }
+
+  /* ---------------- Notepad ---------------- */
+  .note-list { width:110px; overflow-y:auto; background:#fff; border-radius:2px; }
+  .note-item { padding:6px; border-bottom:1px solid #eee; cursor:pointer; font-size:11px; }
+  .note-item:hover, .note-item.active { background:#1955d6; color:#fff; }
+  .notepad-layout { display:flex; height:100%; gap:6px; }
+  .notepad-editor { flex:1; display:flex; flex-direction:column; }
+  .notepad-editor textarea { flex:1; resize:none; width:100%; font-family:"Courier New",monospace; }
+
+  .field-row { display:flex; flex-direction:column; gap:2px; margin-bottom:8px; }
+  .field-row label { font-size:11px; }
+  .status-msg { font-size:11px; color:#a00; min-height:14px; }
+
+  /* ---------------- Start Menu ---------------- */
+  #startMenu {
+    position:absolute; left:2px; bottom:38px; width:330px; display:none; flex-direction:column;
+    background:#fff; border:1px solid #0831d9; border-radius:8px 8px 6px 6px; overflow:hidden;
+    box-shadow:3px 3px 14px rgba(0,0,0,0.5); z-index:8000;
+  }
+  .start-user-banner {
+    background:linear-gradient(180deg,#3d95f5,#1955d6); padding:10px 12px; display:flex; align-items:center; gap:10px;
+  }
+  .user-avatar {
+    width:44px; height:44px; border-radius:6px; background:linear-gradient(180deg,#fff,#c9d8ee);
+    border:2px solid #fff; display:flex; align-items:center; justify-content:center; font-size:22px; color:#1955d6; font-weight:bold;
+  }
+  .user-name { color:#fff; font-weight:bold; font-size:15px; text-shadow:1px 1px 1px rgba(0,0,0,0.3); }
+  .start-body { display:flex; min-height:220px; }
+  .start-left { flex:1.1; background:#fff; padding:8px 0; display:flex; flex-direction:column; }
+  .start-right { flex:1; background:#d3e3fc; padding:8px; display:flex; flex-direction:column; gap:2px; }
+  .start-item {
+    padding:7px 12px; display:flex; align-items:center; gap:8px; cursor:pointer; font-size:12px; border-radius:3px;
+  }
+  .start-item:hover { background:#3d95f5; color:#fff; }
+  .start-right-title { font-size:10px; font-weight:bold; color:#3a5a8c; margin:5px 0 2px 2px; }
+  .start-friend-item { padding:5px 8px; font-size:11px; cursor:pointer; border-radius:3px; display:flex; align-items:center; gap:5px; }
+  .start-friend-item:hover { background:#3d95f5; color:#fff; }
+  .start-footer {
+    background:linear-gradient(180deg,#5b9df5,#1c5cd6); display:flex; justify-content:flex-end; gap:8px; padding:8px 10px;
+  }
+  .xp-footer-btn { color:#fff; background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.4); border-radius:3px; padding:5px 10px; font-size:11px; cursor:pointer; display:flex; align-items:center; gap:5px; }
+  .xp-footer-btn:hover { background:rgba(255,255,255,0.3); }
+  .empty-hint { padding:6px 8px; font-size:10px; color:#5a5a5a; }
+</style>
+</head>
+<body>
+
+<div id="desktop"></div>
+
+<div id="startMenu">
+  <div class="start-user-banner">
+    <div class="user-avatar" id="startAvatar">?</div>
+    <div class="user-name" id="startUsername">username</div>
+  </div>
+  <div class="start-body">
+    <div class="start-left">
+      <div class="start-item" data-app="messenger">💬 Messenger</div>
+      <div class="start-item" data-app="notepad">📝 Notepad</div>
+      <div class="start-item" data-app="settings">⚙️ Settings</div>
+    </div>
+    <div class="start-right">
+      <div class="start-right-title">MY FRIENDS</div>
+      <div id="startFriendsList"></div>
+    </div>
+  </div>
+  <div class="start-footer">
+    <div class="xp-footer-btn" id="logOffBtn">🚪 Log Off</div>
+    <div class="xp-footer-btn" id="turnOffBtn">⏻ Turn Off</div>
+  </div>
+</div>
+
+<div id="taskbar">
+  <div id="startBtn"><span class="orb">⊞</span> start</div>
+  <div id="taskbarDivider"></div>
+  <div id="taskbarApps"></div>
+  <div id="trayArea">
+    <div class="btn98" id="timeToggle">24h</div>
+    <div id="clock">00:00:00</div>
+  </div>
+</div>
+
+<div id="signinOverlay">
+  <div class="win98-window" id="signinBox">
+    <div class="win98-titlebar"><div class="title-text">🔑 <span>Welcome</span></div></div>
+    <div class="win98-body">
+      <div class="field-row">
+        <label>Username (no password needed):</label>
+        <input type="text" id="signinUsername" placeholder="e.g. neo1998" autocomplete="off">
+      </div>
+      <div style="display:flex; gap:6px;">
+        <button class="btn98" id="signinBtn" style="flex:1;">Sign In / Create Profile</button>
+      </div>
+      <div class="status-msg" id="signinStatus"></div>
+      <div style="font-size:10px; color:#444;">Your profile is saved and works on any device — just sign in again with the same username.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(async function(){
+
+/* ---------------- Storage helpers ---------------- */
+async function sGet(key, shared){
+  try { const r = await window.storage.get(key, !!shared); return r ? r.value : null; }
+  catch(e){ return null; }
+}
+async function sSet(key, value, shared){
+  try { await window.storage.set(key, value, !!shared); return true; }
+  catch(e){ console.error('storage set failed', e); return false; }
+}
+async function sDelete(key, shared){
+  try { await window.storage.delete(key, !!shared); return true; }
+  catch(e){ return false; }
+}
+function convKey(a,b){ return 'conv:' + [a,b].sort().join('__'); }
+
+let currentUser = null;
+let openWindows = {};
+let zTop = 100;
+let activeContact = null;
+let msgPollTimer = null;
+let contactsPollTimer = null;
+
+/* ---------------- Window Manager ---------------- */
+function bringToFront(el){ zTop++; el.style.zIndex = zTop; }
+
+function createWindow(opts){
+  if (openWindows[opts.id]) {
+    const w = openWindows[opts.id];
+    w.el.style.display = 'flex';
+    bringToFront(w.el);
+    return w.el;
+  }
+  const el = document.createElement('div');
+  el.className = 'win98-window';
+  el.style.width = (opts.width||400)+'px';
+  el.style.height = (opts.height||300)+'px';
+  el.style.left = (opts.x!=null?opts.x:60+Object.keys(openWindows).length*20)+'px';
+  el.style.top = (opts.y!=null?opts.y:40+Object.keys(openWindows).length*20)+'px';
+  el.innerHTML = `
+    <div class="win98-titlebar">
+      <div class="title-text">${opts.icon||'🗔'} <span>${opts.title}</span></div>
+      <div class="win98-titlebar-btns">
+        <div class="tb-btn min" data-act="min">_</div>
+        <div class="tb-btn max" data-act="max">□</div>
+        <div class="tb-btn close" data-act="close">✕</div>
+      </div>
+    </div>
+    <div class="win98-body ${opts.white?'white':''}">${opts.bodyHTML}</div>
+  `;
+  document.body.appendChild(el);
+  bringToFront(el);
+
+  const titlebar = el.querySelector('.win98-titlebar');
+  let dragging=false, offX=0, offY=0;
+  titlebar.addEventListener('mousedown', (e)=>{
+    if (e.target.classList.contains('tb-btn')) return;
+    dragging=true; offX=e.clientX-el.offsetLeft; offY=e.clientY-el.offsetTop; bringToFront(el);
+  });
+  window.addEventListener('mousemove',(e)=>{
+    if(!dragging) return;
+    el.style.left = Math.max(0,e.clientX-offX)+'px';
+    el.style.top = Math.max(0,e.clientY-offY)+'px';
+  });
+  window.addEventListener('mouseup',()=>{ dragging=false; });
+  el.addEventListener('mousedown', ()=> bringToFront(el));
+
+  el.querySelector('[data-act="close"]').addEventListener('click', ()=>{
+    el.remove();
+    if(openWindows[opts.id]){ openWindows[opts.id].taskbarBtn.remove(); delete openWindows[opts.id]; }
+    if(opts.onClose) opts.onClose();
+  });
+  el.querySelector('[data-act="min"]').addEventListener('click', ()=>{
+    el.style.display='none';
+  });
+  let maximized = false, prevRect = null;
+  el.querySelector('[data-act="max"]').addEventListener('click', ()=>{
+    if(!maximized){
+      prevRect = { left:el.style.left, top:el.style.top, width:el.style.width, height:el.style.height };
+      el.style.left='0px'; el.style.top='0px'; el.style.width='100%'; el.style.height=(window.innerHeight-38)+'px';
+      maximized = true;
+    } else {
+      el.style.left=prevRect.left; el.style.top=prevRect.top; el.style.width=prevRect.width; el.style.height=prevRect.height;
+      maximized = false;
+    }
+  });
+
+  const tbtn = document.createElement('div');
+  tbtn.className = 'btn98 taskbar-app-btn pressed';
+  tbtn.textContent = (opts.icon||'🗔') + ' ' + opts.title;
+  tbtn.addEventListener('click', ()=>{
+    if (el.style.display==='none'){ el.style.display='flex'; bringToFront(el); }
+    else { el.style.display='none'; }
+  });
+  document.getElementById('taskbarApps').appendChild(tbtn);
+
+  openWindows[opts.id] = { el, taskbarBtn: tbtn };
+  return el;
+}
+
+/* ---------------- Sign in ---------------- */
+async function trySignIn(username){
+  username = (username||'').trim();
+  const statusEl = document.getElementById('signinStatus');
+  if(!username){ statusEl.textContent = 'Please enter a username.'; return; }
+  if(!/^[a-zA-Z0-9_\-]{2,20}$/.test(username)){ statusEl.textContent = 'Use 2-20 letters, numbers, _ or -'; return; }
+  statusEl.textContent = 'Signing in...';
+  const existing = await sGet('profile:'+username, true);
+  if (!existing){
+    await sSet('profile:'+username, JSON.stringify({ username, createdAt: Date.now() }), true);
+  }
+  await sSet('currentUser', username, false);
+  currentUser = username;
+  document.getElementById('signinOverlay').style.display = 'none';
+  initDesktopIcons();
+}
+
+document.getElementById('signinBtn').addEventListener('click', ()=> trySignIn(document.getElementById('signinUsername').value));
+document.getElementById('signinUsername').addEventListener('keydown', (e)=>{ if(e.key==='Enter') trySignIn(e.target.value); });
+
+/* ---------------- Clock & Calendar ---------------- */
+let is24h = true;
+function pad(n){ return n.toString().padStart(2,'0'); }
+function updateClock(){
+  const now = new Date();
+  let h = now.getHours();
+  let suffix = '';
+  if(!is24h){ suffix = h>=12?' PM':' AM'; h = h%12; if(h===0) h=12; }
+  document.getElementById('clock').textContent = `${pad(h)}:${pad(now.getMinutes())}:${pad(now.getSeconds())}${suffix}`;
+}
+setInterval(updateClock, 1000);
+updateClock();
+document.getElementById('timeToggle').addEventListener('click', ()=>{
+  is24h = !is24h;
+  document.getElementById('timeToggle').textContent = is24h ? '24h' : '12h';
+  updateClock();
+});
+
+let calViewYear, calViewMonth;
+function openCalendar(){
+  const now = new Date();
+  calViewYear = now.getFullYear(); calViewMonth = now.getMonth();
+  renderCalendar();
+}
+function renderCalendar(){
+  const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const now = new Date();
+  const first = new Date(calViewYear, calViewMonth, 1);
+  const startDow = first.getDay();
+  const daysInMonth = new Date(calViewYear, calViewMonth+1, 0).getDate();
+
+  let years = '';
+  for(let y=now.getFullYear()-100; y<=now.getFullYear()+20; y++){
+    years += `<option value="${y}" ${y===calViewYear?'selected':''}>${y}</option>`;
+  }
+  let months = '';
+  monthNames.forEach((m,i)=>{ months += `<option value="${i}" ${i===calViewMonth?'selected':''}>${m}</option>`; });
+
+  let grid = '';
+  ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(d=> grid += `<div class="cal-daylabel">${d}</div>`);
+  for(let i=0;i<startDow;i++) grid += '<div></div>';
+  for(let d=1; d<=daysInMonth; d++){
+    const isToday = (d===now.getDate() && calViewMonth===now.getMonth() && calViewYear===now.getFullYear());
+    grid += `<div class="cal-day ${isToday?'cal-today':''}">${d}</div>`;
+  }
+
+  const bodyHTML = `
+    <div class="cal-header">
+      <div class="btn98" id="calPrev">◀</div>
+      <div style="display:flex; gap:4px;">
+        <select id="calMonthSel">${months}</select>
+        <select id="calYearSel">${years}</select>
+      </div>
+      <div class="btn98" id="calNext">▶</div>
+    </div>
+    <div class="cal-grid">${grid}</div>
+    <div style="margin-top:6px; font-size:11px;">Today: ${monthNames[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}</div>
+  `;
+  const el = createWindow({ id:'calendar', title:'Calendar', icon:'📅', width:230, height:260, x: window.innerWidth-250, y: window.innerHeight-330, bodyHTML, white:false });
+  el.querySelector('.win98-body').innerHTML = bodyHTML;
+  el.querySelector('#calPrev').addEventListener('click', ()=>{ calViewMonth--; if(calViewMonth<0){calViewMonth=11; calViewYear--;} renderCalendar(); });
+  el.querySelector('#calNext').addEventListener('click', ()=>{ calViewMonth++; if(calViewMonth>11){calViewMonth=0; calViewYear++;} renderCalendar(); });
+  el.querySelector('#calMonthSel').addEventListener('change', (e)=>{ calViewMonth = parseInt(e.target.value); renderCalendar(); });
+  el.querySelector('#calYearSel').addEventListener('change', (e)=>{ calViewYear = parseInt(e.target.value); renderCalendar(); });
+}
+document.getElementById('clock').addEventListener('click', openCalendar);
+
+/* ---------------- Notepad App ---------------- */
+let noteIds = [];
+let activeNoteId = null;
+let noteSaveTimer = null;
+
+async function loadNoteIds(){
+  const raw = await sGet('noteIds:'+currentUser, false);
+  noteIds = raw ? JSON.parse(raw) : [];
+}
+async function saveNoteIds(){ await sSet('noteIds:'+currentUser, JSON.stringify(noteIds), false); }
+
+function notepadBodyHTML(){
+  return `
+    <div class="notepad-layout">
+      <div style="display:flex; flex-direction:column; width:110px;">
+        <button class="btn98" id="newNoteBtn" style="margin-bottom:4px;">+ New</button>
+        <div class="note-list" id="noteList"></div>
+      </div>
+      <div class="notepad-editor">
+        <div style="font-size:11px; margin-bottom:3px;" id="noteTitleLabel">Select or create a note</div>
+        <textarea id="noteTextarea" placeholder="Start typing..." disabled></textarea>
+      </div>
+    </div>
+  `;
+}
+
+async function openNotepad(){
+  const el = createWindow({ id:'notepad', title:'Notepad', icon:'📝', width:420, height:320, bodyHTML: notepadBodyHTML() });
+  await loadNoteIds();
+  renderNoteList();
+  el.querySelector('#newNoteBtn').addEventListener('click', createNewNote);
+  el.querySelector('#noteTextarea').addEventListener('input', (e)=>{
+    if(!activeNoteId) return;
+    clearTimeout(noteSaveTimer);
+    noteSaveTimer = setTimeout(async ()=>{
+      await sSet('note:'+currentUser+':'+activeNoteId, e.target.value, false);
+    }, 400);
+  });
+  if(noteIds.length){ selectNote(noteIds[0]); } else { createNewNote(); }
+}
+
+function renderNoteList(){
+  const listEl = document.querySelector('#notepad .note-list');
+  if(!listEl) return;
+  listEl.innerHTML = '';
+  noteIds.forEach(id=>{
+    const item = document.createElement('div');
+    item.className = 'note-item' + (id===activeNoteId?' active':'');
+    item.textContent = 'Note ' + id.slice(-4);
+    item.addEventListener('click', ()=> selectNote(id));
+    listEl.appendChild(item);
+  });
+}
+
+async function createNewNote(){
+  const id = 'n' + Date.now();
+  noteIds.unshift(id);
+  await saveNoteIds();
+  await sSet('note:'+currentUser+':'+id, '', false);
+  renderNoteList();
+  selectNote(id);
+}
+
+async function selectNote(id){
+  activeNoteId = id;
+  renderNoteList();
+  const ta = document.querySelector('#notepad #noteTextarea');
+  const label = document.querySelector('#notepad #noteTitleLabel');
+  if(!ta) return;
+  ta.disabled = false;
+  label.textContent = 'Note ' + id.slice(-4);
+  const content = await sGet('note:'+currentUser+':'+id, false);
+  ta.value = content || '';
+}
+
+/* ---------------- Messenger App ---------------- */
+async function loadContacts(){
+  const raw = await sGet('contacts:'+currentUser, true);
+  return raw ? JSON.parse(raw) : [];
+}
+async function addContactFor(username, newContact){
+  const raw = await sGet('contacts:'+username, true);
+  let list = raw ? JSON.parse(raw) : [];
+  if(!list.includes(newContact)){
+    list.push(newContact);
+    await sSet('contacts:'+username, JSON.stringify(list), true);
+  }
+}
+
+function messengerBodyHTML(){
+  return `
+    <div class="messenger-layout">
+      <div style="display:flex; flex-direction:column; width:150px;">
+        <button class="btn98" id="addContactBtn" style="margin-bottom:5px;">+ Add Person</button>
+        <div class="contact-list" id="contactList"></div>
+      </div>
+      <div class="chat-area">
+        <div style="font-size:11px; margin-bottom:3px;" id="chatWithLabel">Select a contact</div>
+        <div class="chat-messages inset-panel" id="chatMessages"></div>
+        <div class="chat-input-row">
+          <input type="text" id="chatInput" placeholder="Type a message..." disabled>
+          <input type="file" id="chatFile" style="display:none;">
+          <button class="btn98" id="chatFileBtn" disabled>📎</button>
+          <button class="btn98" id="chatSendBtn" disabled>Send</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function openMessenger(prefillContact){
+  const el = createWindow({ id:'messenger', title:'Messenger', icon:'💬', width:490, height:370, bodyHTML: messengerBodyHTML(),
+    onClose: ()=>{ clearInterval(msgPollTimer); clearInterval(contactsPollTimer); activeContact=null; } });
+
+  await renderContactList();
+
+  el.querySelector('#addContactBtn').addEventListener('click', async ()=>{
+    const name = prompt('Enter their exact username:');
+    if(!name) return;
+    const uname = name.trim();
+    if(!uname || uname===currentUser) return;
+    const targetProfile = await sGet('profile:'+uname, true);
+    if(!targetProfile){
+      if(!confirm(`No profile found yet for "${uname}". Add anyway? (They'll appear once they sign in.)`)) return;
+    }
+    await addContactFor(currentUser, uname);
+    await renderContactList();
+    selectContact(uname);
+  });
+
+  el.querySelector('#chatSendBtn').addEventListener('click', sendMessage);
+  el.querySelector('#chatInput').addEventListener('keydown', (e)=>{ if(e.key==='Enter') sendMessage(); });
+  el.querySelector('#chatFileBtn').addEventListener('click', ()=> el.querySelector('#chatFile').click());
+  el.querySelector('#chatFile').addEventListener('change', async (e)=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    if(file.size > 3*1024*1024){ alert('File too large (max 3MB).'); return; }
+    const reader = new FileReader();
+    reader.onload = async ()=>{
+      await sendMessage({ fileName: file.name, fileData: reader.result });
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  });
+
+  contactsPollTimer = setInterval(renderContactList, 4000);
+
+  if(prefillContact){ await selectContact(prefillContact); }
+}
+
+async function renderContactList(){
+  const listEl = document.querySelector('#messenger .contact-list');
+  if(!listEl) return;
+  const contacts = await loadContacts();
+  listEl.innerHTML = '';
+  contacts.forEach(name=>{
+    const item = document.createElement('div');
+    item.className = 'contact-item' + (name===activeContact?' active':'');
+    item.innerHTML = `<span class="dot"></span> ${name}`;
+    item.addEventListener('click', ()=> selectContact(name));
+    listEl.appendChild(item);
+  });
+  if(!contacts.length){
+    listEl.innerHTML = '<div style="padding:8px; font-size:11px; color:#888;">No contacts yet. Click "+ Add Person".</div>';
+  }
+  refreshStartFriends();
+}
+
+async function selectContact(name){
+  activeContact = name;
+  const label = document.querySelector('#messenger #chatWithLabel');
+  if(label) label.textContent = 'Chat with ' + name;
+  const input = document.querySelector('#messenger #chatInput');
+  if(input) input.disabled = false;
+  const fbtn = document.querySelector('#messenger #chatFileBtn');
+  if(fbtn) fbtn.disabled = false;
+  const sbtn = document.querySelector('#messenger #chatSendBtn');
+  if(sbtn) sbtn.disabled = false;
+  await renderContactList();
+  await renderMessages();
+  clearInterval(msgPollTimer);
+  msgPollTimer = setInterval(renderMessages, 2500);
+}
+
+async function renderMessages(){
+  if(!activeContact) return;
+  const box = document.querySelector('#messenger #chatMessages');
+  if(!box) return;
+  const raw = await sGet(convKey(currentUser, activeContact), true);
+  const msgs = raw ? JSON.parse(raw) : [];
+  const wasNearBottom = box.scrollTop + box.clientHeight >= box.scrollHeight - 30;
+  box.innerHTML = '';
+  msgs.forEach(m=>{
+    const bubble = document.createElement('div');
+    bubble.className = 'msg-bubble ' + (m.from===currentUser ? 'msg-mine':'msg-theirs');
+    const d = new Date(m.timestamp);
+    let inner = `<div>${escapeHtml(m.text||'')}</div>`;
+    if(m.fileName){
+      inner += `<a class="msg-file" href="${m.fileData}" download="${escapeHtml(m.fileName)}">📎 ${escapeHtml(m.fileName)}</a>`;
+    }
+    inner += `<div class="msg-meta">${m.from} • ${d.toLocaleDateString()} ${d.toLocaleTimeString()}</div>`;
+    bubble.innerHTML = inner;
+    box.appendChild(bubble);
+  });
+  if(wasNearBottom || msgs.length<=1) box.scrollTop = box.scrollHeight;
+}
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+async function sendMessage(fileInfo){
+  if(!activeContact) return;
+  const input = document.querySelector('#messenger #chatInput');
+  const text = input.value.trim();
+  if(!text && !fileInfo) return;
+  const key = convKey(currentUser, activeContact);
+  const raw = await sGet(key, true);
+  const msgs = raw ? JSON.parse(raw) : [];
+  const msg = { from: currentUser, to: activeContact, text: text, timestamp: Date.now() };
+  if(fileInfo){ msg.fileName = fileInfo.fileName; msg.fileData = fileInfo.fileData; }
+  msgs.push(msg);
+  const ok = await sSet(key, JSON.stringify(msgs), true);
+  if(!ok){ alert('Message failed to send (storage limit reached).'); return; }
+  input.value = '';
+  await addContactFor(activeContact, currentUser);
+  await addContactFor(currentUser, activeContact);
+  await renderMessages();
+}
+
+/* ---------------- Settings App ---------------- */
+function settingsBodyHTML(){
+  return `
+    <div class="field-row">
+      <label>Browser Tab Title:</label>
+      <input type="text" id="tabTitleInput" placeholder="Messenger XP">
+    </div>
+    <div class="field-row">
+      <label>Website Icon (favicon):</label>
+      <input type="file" id="iconInput" accept="image/*">
+    </div>
+    <button class="btn98" id="saveSettingsBtn">Apply</button>
+    <div class="status-msg" id="settingsStatus"></div>
+  `;
+}
+
+async function openSettings(){
+  const el = createWindow({ id:'settings', title:'Settings', icon:'⚙️', width:340, height:230, bodyHTML: settingsBodyHTML() });
+  const saved = await sGet('appSettings:'+currentUser, false);
+  const settings = saved ? JSON.parse(saved) : {};
+  if(settings.title) el.querySelector('#tabTitleInput').value = settings.title;
+
+  el.querySelector('#saveSettingsBtn').addEventListener('click', async ()=>{
+    const title = el.querySelector('#tabTitleInput').value.trim();
+    const fileInput = el.querySelector('#iconInput');
+    const newSettings = { ...settings };
+    if(title){ document.title = title; newSettings.title = title; }
+    const applyAndSave = async ()=>{
+      await sSet('appSettings:'+currentUser, JSON.stringify(newSettings), false);
+      const s = el.querySelector('#settingsStatus');
+      if(s){ s.textContent = 'Settings applied!'; setTimeout(()=>{ if(s) s.textContent=''; }, 2000); }
+    };
+    if(fileInput.files[0]){
+      const reader = new FileReader();
+      reader.onload = async ()=>{
+        document.getElementById('favicon').setAttribute('href', reader.result);
+        newSettings.icon = reader.result;
+        await applyAndSave();
+      };
+      reader.readAsDataURL(fileInput.files[0]);
+    } else {
+      await applyAndSave();
+    }
+  });
+}
+
+async function applySavedSettings(){
+  const saved = await sGet('appSettings:'+currentUser, false);
+  if(!saved) return;
+  const settings = JSON.parse(saved);
+  if(settings.title) document.title = settings.title;
+  if(settings.icon) document.getElementById('favicon').setAttribute('href', settings.icon);
+}
+
+/* ---------------- Start Menu ---------------- */
+function appLauncher(app){
+  if(app==='messenger') openMessenger();
+  else if(app==='notepad') openNotepad();
+  else if(app==='settings') openSettings();
+}
+
+document.querySelectorAll('.start-item[data-app]').forEach(item=>{
+  item.addEventListener('click', ()=>{
+    appLauncher(item.getAttribute('data-app'));
+    closeStartMenu();
+  });
+});
+
+function openStartMenu(){
+  document.getElementById('startUsername').textContent = currentUser || '';
+  document.getElementById('startAvatar').textContent = (currentUser||'?').charAt(0).toUpperCase();
+  document.getElementById('startMenu').style.display = 'flex';
+  refreshStartFriends();
+}
+function closeStartMenu(){ document.getElementById('startMenu').style.display = 'none'; }
+function toggleStartMenu(){
+  const menu = document.getElementById('startMenu');
+  if(menu.style.display === 'flex') closeStartMenu(); else openStartMenu();
+}
+document.getElementById('startBtn').addEventListener('click', (e)=>{ e.stopPropagation(); toggleStartMenu(); });
+document.addEventListener('click', (e)=>{
+  const menu = document.getElementById('startMenu');
+  if(menu.style.display==='flex' && !menu.contains(e.target) && e.target.id!=='startBtn') closeStartMenu();
+});
+
+async function refreshStartFriends(){
+  const listEl = document.getElementById('startFriendsList');
+  if(!listEl || !currentUser) return;
+  const contacts = await loadContacts();
+  listEl.innerHTML = '';
+  if(!contacts.length){
+    listEl.innerHTML = '<div class="empty-hint">No friends added yet. Open Messenger to add someone.</div>';
+    return;
+  }
+  contacts.forEach(name=>{
+    const item = document.createElement('div');
+    item.className = 'start-friend-item';
+    item.innerHTML = `💬 ${name}`;
+    item.addEventListener('click', async ()=>{
+      closeStartMenu();
+      await openMessenger(name);
+    });
+    listEl.appendChild(item);
+  });
+}
+
+document.getElementById('logOffBtn').addEventListener('click', async ()=>{
+  if(!confirm('Log off ' + currentUser + '?')) return;
+  await sDelete('currentUser', false);
+  location.reload();
+});
+document.getElementById('turnOffBtn').addEventListener('click', ()=>{
+  closeStartMenu();
+  alert('It is now safe to close this tab. 👋');
+});
+
+/* ---------------- Desktop Icons ---------------- */
+function initDesktopIcons(){
+  const desktop = document.getElementById('desktop');
+  desktop.innerHTML = '';
+  const icons = [
+    { label:'Messenger', glyph:'💬', onOpen: ()=>openMessenger() },
+    { label:'Notepad', glyph:'📝', onOpen: openNotepad },
+    { label:'Settings', glyph:'⚙️', onOpen: openSettings },
+  ];
+  icons.forEach(ic=>{
+    const div = document.createElement('div');
+    div.className = 'desktop-icon';
+    div.innerHTML = `<div class="icon-glyph">${ic.glyph}</div><div class="icon-label">${ic.label}</div>`;
+    div.addEventListener('click', ()=>{
+      document.querySelectorAll('.desktop-icon').forEach(d=>d.classList.remove('selected'));
+      div.classList.add('selected');
+      ic.onOpen();
+    });
+    desktop.appendChild(div);
+  });
+  applySavedSettings();
+}
+
+/* ---------------- Init: auto sign-in check ---------------- */
+async function init(){
+  const existingUser = await sGet('currentUser', false);
+  if(existingUser){
+    currentUser = existingUser;
+    document.getElementById('signinOverlay').style.display = 'none';
+    initDesktopIcons();
+  }
+}
+init();
+
+})();
+</script>
+</body>
+</html>
